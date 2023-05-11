@@ -88,8 +88,61 @@ func (h *userHandler) Login(c *gin.Context) {
 
 	formatter := user.FormatUser(loggedInUser, "token")
 
-	response := helper.APIResponse("Succesfully login", http.StatusOK, "error", formatter)
+	response := helper.APIResponse("Succesfully login", http.StatusOK, "success", formatter)
 
 	c.JSON(http.StatusOK, response)
 
+}
+
+func (h *userHandler) CheckEmailAvailability(c *gin.Context) {
+	// ada input email dari user
+	// input email di-mapping ke struct input
+	// struct input di passing ke service
+	// service akan manggil repository - email udah ada apa belum
+	// repository - query ke db
+
+	var input user.CheckEmailInput
+
+	err := c.ShouldBindJSON(&input)
+
+	if err != nil {
+
+		errors := helper.FormatValidationError(err)
+		errorMessage := gin.H{
+			"errors": errors,
+		}
+
+		response := helper.APIResponse("Email checking failed", http.StatusUnprocessableEntity, "error", errorMessage)
+
+		c.JSON(http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	isEmailAvailable, err := h.userService.IsEmailAvailable(input)
+
+	if err != nil {
+		errorMessage := gin.H{
+			"errors": "Something went wrong on our system",
+		}
+
+		response := helper.APIResponse("Email checking failed", http.StatusUnprocessableEntity, "error", errorMessage)
+
+		c.JSON(http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	metaMessage := "Email already exist"
+	httpStatus := http.StatusConflict
+
+	if isEmailAvailable {
+		metaMessage = "Email is available"
+		httpStatus = http.StatusOK
+	}
+	responseMessage := gin.H{
+		"is_available": isEmailAvailable,
+	}
+
+	response := helper.APIResponse(metaMessage, httpStatus, "success", responseMessage)
+
+	c.JSON(httpStatus, response)
 }
