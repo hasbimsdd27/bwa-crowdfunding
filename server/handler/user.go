@@ -95,11 +95,6 @@ func (h *userHandler) Login(c *gin.Context) {
 }
 
 func (h *userHandler) CheckEmailAvailability(c *gin.Context) {
-	// ada input email dari user
-	// input email di-mapping ke struct input
-	// struct input di passing ke service
-	// service akan manggil repository - email udah ada apa belum
-	// repository - query ke db
 
 	var input user.CheckEmailInput
 
@@ -145,4 +140,64 @@ func (h *userHandler) CheckEmailAvailability(c *gin.Context) {
 	response := helper.APIResponse(metaMessage, httpStatus, "success", responseMessage)
 
 	c.JSON(httpStatus, response)
+}
+
+func (h *userHandler) UploadAvatar(c *gin.Context) {
+
+	file, err := c.FormFile("avatar")
+
+	data := gin.H{
+		"is_uploaded": false,
+	}
+
+	if err != nil {
+
+		response := helper.APIResponse("Failed to upload avatar", http.StatusBadRequest, "error", data)
+
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	err = helper.ImageFileValidator(file)
+	if err != nil {
+		data = gin.H{
+			"error": err.Error(),
+		}
+		response := helper.APIResponse("Failed to upload avatar", http.StatusBadRequest, "error", data)
+
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	filename, err := helper.S3ImageUploader(file)
+
+	if err != nil {
+		data = gin.H{
+			"error": err.Error(),
+		}
+		response := helper.APIResponse("Failed to upload avatar", http.StatusBadRequest, "error", data)
+
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	userID := 1
+
+	_, err = h.userService.SaveAvater(userID, filename)
+
+	if err != nil {
+		response := helper.APIResponse("Failed to upload avatar", http.StatusBadRequest, "error", data)
+
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	data = gin.H{
+		"is_uploaded": true,
+	}
+
+	response := helper.APIResponse("Avatar successfuly uploaded", http.StatusOK, "success", data)
+
+	c.JSON(http.StatusOK, response)
+
 }

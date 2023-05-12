@@ -3,14 +3,22 @@ package main
 import (
 	"bwastartup/handler"
 	"bwastartup/user"
+	"fmt"
 	"log"
+	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
 func main() {
+
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
 	dsn := "root:root@tcp(127.0.0.1:3306)/db_bwa_crowdfunding?charset=utf8mb4&parseTime=True&loc=Local"
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
@@ -21,6 +29,7 @@ func main() {
 
 	userRepository := user.NewRepository(db)
 	userService := user.NewService(userRepository)
+
 	userHandler := handler.NewUserHandler(userService)
 
 	router := gin.Default()
@@ -29,7 +38,8 @@ func main() {
 	api.POST("/users", userHandler.RegisterUser)
 	api.POST("/sessions", userHandler.Login)
 	api.POST("/email_checkers", userHandler.CheckEmailAvailability)
+	api.POST("/avatar", userHandler.UploadAvatar)
 
-	router.Run("127.0.0.1:8080")
+	router.Run(fmt.Sprintf("127.0.0.1:%s", os.Getenv("PORT")))
 
 }
