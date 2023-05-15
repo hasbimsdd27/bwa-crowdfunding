@@ -51,6 +51,7 @@ func main() {
 	api.POST("/avatar", authMiddleware(authService, userService), userHandler.UploadAvatar)
 
 	api.GET("/campaigns", campaignHandler.GetCampaigns)
+	api.GET("/campaigns/:id", campaignHandler.GetCampaign)
 
 	router.Run(fmt.Sprintf("127.0.0.1:%s", os.Getenv("PORT")))
 
