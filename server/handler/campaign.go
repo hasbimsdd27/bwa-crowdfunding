@@ -145,3 +145,81 @@ func (h *campaignHandler) UpdateCampaign(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response)
 }
+
+func (h *campaignHandler) UploadImage(c *gin.Context) {
+	var input campaign.CreateCampaignImageInput
+
+	err := c.ShouldBind(&input)
+	if err != nil {
+		errors := helper.FormatValidationError(err)
+		errorMessage := gin.H{
+			"errors": errors,
+		}
+
+		response := helper.APIResponse("Failed to update campaign", http.StatusUnprocessableEntity, "error", errorMessage)
+
+		c.JSON(http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	file, err := c.FormFile("file")
+
+	data := gin.H{
+		"is_uploaded": false,
+	}
+
+	if err != nil {
+
+		response := helper.APIResponse("Failed to update campaign image", http.StatusBadRequest, "error", data)
+
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	err = helper.ImageFileValidator(file)
+	if err != nil {
+		data = gin.H{
+			"error": err.Error(),
+		}
+		response := helper.APIResponse("Failed to update campaign image", http.StatusBadRequest, "error", data)
+
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	filename, err := helper.S3ImageUploader(file)
+
+	if err != nil {
+		data = gin.H{
+			"error": err.Error(),
+		}
+		response := helper.APIResponse("Failed to update campaign image", http.StatusBadRequest, "error", data)
+
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	currentUser := c.MustGet("currentUser").(user.User)
+	input.User = currentUser
+
+	_, err = h.service.SaveCampaignImage(input, filename)
+
+	if err != nil {
+		data = gin.H{
+			"error": err.Error(),
+		}
+		response := helper.APIResponse("Failed to update campaign image", http.StatusBadRequest, "error", data)
+
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	data = gin.H{
+		"is_uploaded": true,
+	}
+
+	response := helper.APIResponse("campaign image successfuly uploaded", http.StatusOK, "success", data)
+
+	c.JSON(http.StatusOK, response)
+
+}

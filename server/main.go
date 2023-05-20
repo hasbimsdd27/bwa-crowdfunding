@@ -26,7 +26,13 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	dsn := "root:root@tcp(127.0.0.1:3306)/db_bwa_crowdfunding?charset=utf8mb4&parseTime=True&loc=Local"
+	dbUser := os.Getenv("MYSQL_USER")
+	dbPass := os.Getenv("MYSQL_PASS")
+	dbHost := os.Getenv("MYSQL_HOST")
+	dbName := os.Getenv("MYSQL_DB_NAME")
+	dbPort := os.Getenv("MYSQL_PORT")
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", dbUser, dbPass, dbHost, dbPort, dbName)
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 
 	if err != nil {
@@ -54,6 +60,7 @@ func main() {
 	api.GET("/campaigns/:id", campaignHandler.GetCampaign)
 	api.POST("/campaigns", authMiddleware(authService, userService), campaignHandler.CreateCampaign)
 	api.PUT("/campaigns/:id", authMiddleware(authService, userService), campaignHandler.UpdateCampaign)
+	api.POST("/campaign-images", authMiddleware(authService, userService), campaignHandler.UploadImage)
 
 	router.Run(fmt.Sprintf("127.0.0.1:%s", os.Getenv("PORT")))
 
