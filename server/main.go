@@ -56,6 +56,16 @@ func main() {
 	router := gin.Default()
 	api := router.Group("/api/v1")
 
+	user, _ := userService.GetUserByID(3)
+
+	input := transaction.CreateTransactionInput{
+		CampaignID: 1,
+		Amount:     10000000,
+		User:       user,
+	}
+
+	transactionService.CreateTransaction(input)
+
 	api.POST("/users", userHandler.RegisterUser)
 	api.POST("/sessions", userHandler.Login)
 	api.POST("/email_checkers", userHandler.CheckEmailAvailability)
@@ -69,6 +79,7 @@ func main() {
 
 	api.GET("/campaigns/:id/transactions", authMiddleware(authService, userService), transactionHandler.GetCampaignTransactions)
 	api.GET("/transactions", authMiddleware(authService, userService), transactionHandler.GetUserTransactions)
+	api.POST("/transactions", authMiddleware(authService, userService), transactionHandler.CreateTransaction)
 
 	router.Run(fmt.Sprintf("127.0.0.1:%s", os.Getenv("PORT")))
 
