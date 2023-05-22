@@ -12,3 +12,8 @@ type CreateTransactionInput struct {
 	CampaignID int `json:"campaign_id" binding:"required"`
 	User       user.User
 }
+
+type UpdateTransactionByWebhook struct {
+	TransactionCode string `json:"transaction_code" binding:"required"`
+	Status          string `json:"status" binding:"required"`
+}

@@ -3,6 +3,8 @@ package transaction
 import (
 	"bwastartup/campaign"
 	"bwastartup/helper"
+	"bwastartup/payment"
+
 	"errors"
 	"fmt"
 	"strings"
@@ -11,16 +13,18 @@ import (
 type service struct {
 	repository         Repository
 	campaignRepository campaign.Repository
+	paymentService     payment.Service
 }
 
 type Service interface {
 	GetTransactionsByCampaignID(input GetCampaignTransactionsInput) ([]Transaction, error)
 	GetTransactionByUserID(userID int) ([]Transaction, error)
 	CreateTransaction(input CreateTransactionInput) (Transaction, error)
+	UpdateTransactionByWebhook(input UpdateTransactionByWebhook) error
 }
 
-func NewService(repository Repository, campaignRepository campaign.Repository) *service {
-	return &service{repository, campaignRepository}
+func NewService(repository Repository, campaignRepository campaign.Repository, paymentService payment.Service) *service {
+	return &service{repository, campaignRepository, paymentService}
 }
 
 func (s *service) GetTransactionsByCampaignID(input GetCampaignTransactionsInput) ([]Transaction, error) {
@@ -59,7 +63,7 @@ func (s *service) CreateTransaction(input CreateTransactionInput) (Transaction, 
 	transaction.Amount = input.Amount
 	transaction.UserID = input.User.ID
 	transaction.Status = "pending"
-	transaction.Code = fmt.Sprintf("ORDER-%s", strings.ToUpper(helper.RandStr(8)))
+	transaction.Code = fmt.Sprintf("ORDER-CROWDFUND-%s", strings.ToUpper(helper.RandStr(8)))
 
 	newTransaction, err := s.repository.Save(transaction)
 
@@ -67,5 +71,46 @@ func (s *service) CreateTransaction(input CreateTransactionInput) (Transaction, 
 		return newTransaction, err
 	}
 
+	paymentTransaction := payment.Transaction{
+		ID:     newTransaction.ID,
+		Amount: newTransaction.Amount,
+		Code:   newTransaction.Code,
+	}
+
+	paymentUrl, err := s.paymentService.GetPaymentUrl(
+		paymentTransaction,
+		input.User)
+
+	if err != nil {
+		return newTransaction, err
+	}
+
+	newTransaction.PaymentUrl = paymentUrl
+
+	newTransaction, err = s.repository.Update(newTransaction)
+
+	if err != nil {
+		return newTransaction, err
+	}
+
 	return newTransaction, nil
+}
+
+func (s *service) UpdateTransactionByWebhook(input UpdateTransactionByWebhook) error {
+	transaction, err := s.repository.GetByTransactionCode(input.TransactionCode)
+
+	if err != nil {
+		return err
+	}
+
+	transaction.Status = strings.ToLower(input.Status)
+
+	_, err = s.repository.Update(transaction)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+
 }

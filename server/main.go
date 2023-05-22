@@ -5,6 +5,7 @@ import (
 	"bwastartup/campaign"
 	"bwastartup/handler"
 	"bwastartup/helper"
+	"bwastartup/payment"
 	"bwastartup/transaction"
 	"bwastartup/user"
 	"fmt"
@@ -47,7 +48,8 @@ func main() {
 	userService := user.NewService(userRepository)
 	campaignService := campaign.NewService(campaignRepository)
 	authService := auth.NewService()
-	transactionService := transaction.NewService(transactionRepository, campaignRepository)
+	paymentService := payment.NewService()
+	transactionService := transaction.NewService(transactionRepository, campaignRepository, paymentService)
 
 	userHandler := handler.NewUserHandler(userService, authService)
 	campaignHandler := handler.NewCampaignHandler(campaignService)
@@ -55,16 +57,6 @@ func main() {
 
 	router := gin.Default()
 	api := router.Group("/api/v1")
-
-	user, _ := userService.GetUserByID(3)
-
-	input := transaction.CreateTransactionInput{
-		CampaignID: 1,
-		Amount:     10000000,
-		User:       user,
-	}
-
-	transactionService.CreateTransaction(input)
 
 	api.POST("/users", userHandler.RegisterUser)
 	api.POST("/sessions", userHandler.Login)
@@ -80,6 +72,8 @@ func main() {
 	api.GET("/campaigns/:id/transactions", authMiddleware(authService, userService), transactionHandler.GetCampaignTransactions)
 	api.GET("/transactions", authMiddleware(authService, userService), transactionHandler.GetUserTransactions)
 	api.POST("/transactions", authMiddleware(authService, userService), transactionHandler.CreateTransaction)
+
+	api.POST("/webhook/midtrans", transactionHandler.UpdateTransactionFromWebhook)
 
 	router.Run(fmt.Sprintf("127.0.0.1:%s", os.Getenv("PORT")))
 

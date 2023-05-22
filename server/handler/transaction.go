@@ -89,8 +89,45 @@ func (h *transactionHandler) CreateTransaction(c *gin.Context) {
 		return
 	}
 
-	response := helper.APIResponse("User's transactions", http.StatusOK, "success", newTransaction)
+	response := helper.APIResponse("User's transactions", http.StatusOK, "success", transaction.FormatTransaction(newTransaction))
 
 	c.JSON(http.StatusOK, response)
+
+}
+
+func (h *transactionHandler) UpdateTransactionFromWebhook(c *gin.Context) {
+	var input transaction.UpdateTransactionByWebhook
+
+	err := c.ShouldBindJSON(&input)
+
+	if err != nil {
+		errors := helper.FormatValidationError(err)
+		errorMessage := gin.H{
+			"errors": errors,
+		}
+
+		response := helper.APIResponse("Failed to create transaction", http.StatusUnprocessableEntity, "error", errorMessage)
+
+		c.JSON(http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	err = h.service.UpdateTransactionByWebhook(input)
+
+	if err != nil {
+		errors := helper.FormatValidationError(err)
+		errorMessage := gin.H{
+			"errors": errors,
+		}
+
+		response := helper.APIResponse("Failed to create transaction", http.StatusUnprocessableEntity, "error", errorMessage)
+
+		c.JSON(http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+	})
 
 }
