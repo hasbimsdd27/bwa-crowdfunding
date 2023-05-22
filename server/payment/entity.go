@@ -22,6 +22,7 @@ type RequestPayload struct {
 	TransactionDetail RequestPayloadTransactionDetail `json:"transaction_details"`
 	CustomerDetail    RequestPayloadCustomerDetail    `json:"customer_detail"`
 	WebhookUrl        string                          `json:"webhook_url"`
+	TransactionKey    string                          `json:"transaction_key"`
 }
 
 type ResponseBodyData struct {

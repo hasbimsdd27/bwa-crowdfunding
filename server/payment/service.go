@@ -1,6 +1,7 @@
 package payment
 
 import (
+	"bwastartup/helper"
 	"bwastartup/user"
 	"bytes"
 	"encoding/json"
@@ -35,7 +36,15 @@ func (s *service) GetPaymentUrl(transaction Transaction, user user.User) (string
 	payloadBody := RequestPayload{}
 	payloadBody.CustomerDetail = customerDetail
 	payloadBody.TransactionDetail = transactionDetail
-	payloadBody.WebhookUrl = "http://localhost:7350/api/v1/webhook/midtrans"
+	payloadBody.WebhookUrl = fmt.Sprintf("%s/api/v1/webhook/midtrans", os.Getenv("APP_URL"))
+
+	generateTransactionKeyInput := helper.GenerateTransactionKeyInput{}
+
+	generateTransactionKeyInput.Amount = transaction.Amount
+	generateTransactionKeyInput.Code = transaction.Code
+	generateTransactionKeyInput.UserID = user.ID
+
+	payloadBody.TransactionKey = helper.GenerateTransactionKey(generateTransactionKeyInput)
 
 	postBody, _ := json.Marshal(payloadBody)
 	responseBody := bytes.NewBuffer(postBody)

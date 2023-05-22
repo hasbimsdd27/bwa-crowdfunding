@@ -106,9 +106,9 @@ func (h *transactionHandler) UpdateTransactionFromWebhook(c *gin.Context) {
 			"errors": errors,
 		}
 
-		response := helper.APIResponse("Failed to create transaction", http.StatusUnprocessableEntity, "error", errorMessage)
+		response := helper.APIResponse("Failed to create transaction", http.StatusBadRequest, "error", errorMessage)
 
-		c.JSON(http.StatusUnprocessableEntity, response)
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
@@ -120,9 +120,9 @@ func (h *transactionHandler) UpdateTransactionFromWebhook(c *gin.Context) {
 			"errors": errors,
 		}
 
-		response := helper.APIResponse("Failed to create transaction", http.StatusUnprocessableEntity, "error", errorMessage)
+		response := helper.APIResponse("Failed to create transaction", http.StatusBadRequest, "error", errorMessage)
 
-		c.JSON(http.StatusUnprocessableEntity, response)
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 

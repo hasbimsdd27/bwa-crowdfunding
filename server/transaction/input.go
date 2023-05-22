@@ -16,4 +16,5 @@ type CreateTransactionInput struct {
 type UpdateTransactionByWebhook struct {
 	TransactionCode string `json:"transaction_code" binding:"required"`
 	Status          string `json:"status" binding:"required"`
+	TransactionKey  string `json:"transaction_key" binding:"required"`
 }

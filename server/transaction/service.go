@@ -103,12 +103,37 @@ func (s *service) UpdateTransactionByWebhook(input UpdateTransactionByWebhook) e
 		return err
 	}
 
+	transactionKeyInput := helper.GenerateTransactionKeyInput{}
+	transactionKeyInput.UserID = transaction.UserID
+	transactionKeyInput.Amount = transaction.Amount
+	transactionKeyInput.Code = transaction.Code
+
+	transactionKey := helper.GenerateTransactionKey(transactionKeyInput)
+
+	if transactionKey != input.TransactionKey {
+		return err
+	}
+
 	transaction.Status = strings.ToLower(input.Status)
 
 	_, err = s.repository.Update(transaction)
-
 	if err != nil {
 		return err
+	}
+
+	if transaction.Status == "success" {
+		campaign, err := s.campaignRepository.FindByID(transaction.CampaignID)
+		if transactionKey != input.TransactionKey {
+			return err
+		}
+
+		campaign.BackerCount = campaign.BackerCount + 1
+		campaign.CurrentAmount = campaign.CurrentAmount + transaction.Amount
+
+		_, err = s.campaignRepository.Update(campaign)
+		if transactionKey != input.TransactionKey {
+			return err
+		}
 	}
 
 	return nil

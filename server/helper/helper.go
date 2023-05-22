@@ -1,10 +1,13 @@
 package helper
 
 import (
+	"crypto/sha512"
 	"errors"
+	"fmt"
 	"math/rand"
 	"mime/multipart"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
@@ -19,6 +22,12 @@ type Meta struct {
 	Message string `json:"message"`
 	Code    int    `json:"code"`
 	Status  string `json:"status"`
+}
+
+type GenerateTransactionKeyInput struct {
+	Code   string
+	UserID int
+	Amount int
 }
 
 func APIResponse(message string, code int, status string, data interface{}) Response {
@@ -80,4 +89,14 @@ func RandStr(n int) string {
 		b[i] = letters[rand.Intn(len(letters))]
 	}
 	return string(b)
+}
+
+func GenerateTransactionKey(input GenerateTransactionKeyInput) string {
+
+	combinedData := fmt.Sprintf("%s%d%d%s", input.Code, input.Amount, input.UserID, os.Getenv("MIDTRANS_ADAPTER_SERVER_KEY"))
+
+	transactionKey := sha512.New()
+	transactionKey.Write([]byte(combinedData))
+
+	return fmt.Sprintf("%x", transactionKey.Sum(nil))
 }
